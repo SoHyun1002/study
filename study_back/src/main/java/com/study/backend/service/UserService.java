@@ -3,8 +3,8 @@ package com.study.backend.service;
 import com.study.backend.component.JwtToken;
 import com.study.backend.entity.user.User;
 import com.study.backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -16,7 +16,7 @@ public class UserService {
     private final RedisTemplate<String, User> redisTemplate;
     private final JwtToken jwtToken;
 
-    public UserService(UserRepository userRepository, RedisTemplate<String, User> redisTemplate, JwtToken jwtToken) {
+    public UserService(UserRepository userRepository, RedisTemplate<String, User> redisTemplate, JwtToken jwtToken, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.redisTemplate = redisTemplate;
         this.jwtToken = jwtToken;
@@ -58,9 +58,6 @@ public class UserService {
         redisTemplate.delete("user:" + id);
     }
 
-
-
-
     @PostConstruct
     public void init() {
         // 애플리케이션 시작 시 더미 데이터를 Redis에 추가
@@ -71,19 +68,22 @@ public class UserService {
     public void createDummyData() {
         // 더미 유저 엔티티 생성
         User user = new User();
-        user.setuId(1L);
-        user.setuName("DummyUser");
-        user.setuPassword("dummyPassword");
-        user.setuEmail("dummy@example.com");
-        user.setuRole("ROLE_USER");
+        user.setuEmail("testuser@example.com");
+        user.setuPassword("{noop}password123"); // 비밀번호 인코딩 없이 저장
+        user.setuName("test");
+        user.setuRole("USER");
+        userRepository.save(user);
+
+        // DB 저장
+        User saved = userRepository.save(user);
 
         // Redis에 저장할 때 사용할 키
-        String redisKey = "user:" + user.getuId();
+        String redisKey = "user:" + saved.getuId();
 
         // Redis에 저장
-        redisTemplate.opsForValue().set(redisKey, user);
+        redisTemplate.opsForValue().set(redisKey, saved);
 
-        System.out.println("Inserted dummy User into Redis with key: " + redisKey);
+        System.out.println("Inserted dummy User into DB and Redis with key: " + redisKey);
     }
 
     // 더미 유저 조회
