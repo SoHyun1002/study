@@ -19,7 +19,7 @@ public class JwtToken {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000)) // 1시간
+                .setExpiration(new Date(System.currentTimeMillis() + 5*60*60*1000))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

@@ -4,6 +4,7 @@ import com.study.backend.component.JwtToken;
 import com.study.backend.entity.user.User;
 import com.study.backend.repository.UserRepository;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +16,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final RedisTemplate<String, User> redisTemplate;
     private final JwtToken jwtToken;
+    private final StringRedisTemplate stringRedisTemplate;
 
-    public UserService(UserRepository userRepository, RedisTemplate<String, User> redisTemplate, JwtToken jwtToken, PasswordEncoder passwordEncoder) {
+    // 생성자에 추가
+    public UserService(UserRepository userRepository, RedisTemplate<String, User> redisTemplate, JwtToken jwtToken, StringRedisTemplate stringRedisTemplate) {
         this.userRepository = userRepository;
         this.redisTemplate = redisTemplate;
         this.jwtToken = jwtToken;
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     public User registerUser(User user) {
@@ -66,24 +70,22 @@ public class UserService {
 
     // 레디스 테스트용 더미 데이터
     public void createDummyData() {
-        // 더미 유저 엔티티 생성
         User user = new User();
         user.setuEmail("testuser@example.com");
-        user.setuPassword("{noop}password123"); // 비밀번호 인코딩 없이 저장
+        user.setuPassword("{noop}password123");
         user.setuName("test");
         user.setuRole("USER");
-        userRepository.save(user);
 
-        // DB 저장
         User saved = userRepository.save(user);
 
-        // Redis에 저장할 때 사용할 키
-        String redisKey = "user:" + saved.getuId();
+        // JWT 토큰 생성
+        String token = jwtToken.generateToken(saved.getuEmail());
 
-        // Redis에 저장
-        redisTemplate.opsForValue().set(redisKey, saved);
+        // Redis에 토큰 저장
+        String tokenKey = "user:token:" + saved.getuId();
 
-        System.out.println("Inserted dummy User into DB and Redis with key: " + redisKey);
+        stringRedisTemplate.opsForValue().set(token, token);
+        System.out.println("Inserted dummy JWT token into Redis with key: " + tokenKey);
     }
 
     // 더미 유저 조회
