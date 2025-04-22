@@ -8,8 +8,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import jakarta.servlet.http.Cookie;
 
 import javax.annotation.PostConstruct;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -111,10 +113,18 @@ public class UserService {
     }
 
     public String resolveToken(HttpServletRequest request) {
-        String tokenHeader = request.getHeader("Authorization");
-        if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
-            return tokenHeader.substring(7);
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("jwt".equals(cookie.getName())) {
+                    return cookie.getValue(); // 쿠키에서 jwt 값 꺼냄
+                }
+            }
         }
         return null;
+    }
+
+    public Optional<User> findByuEmail(String uEmail) {
+        return userRepository.findByuEmail(uEmail);
     }
 }
