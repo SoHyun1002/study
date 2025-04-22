@@ -1,8 +1,10 @@
 package com.study.backend.controller;
 
+import com.study.backend.dto.LoginRequest;
 import com.study.backend.entity.user.User;
 import com.study.backend.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,40 +27,35 @@ public class UserController {
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> loginData) {
-        String email = loginData.get("email");
-        String password = loginData.get("password");
-
-        String token = userService.login(email, password);
+    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {
+        String token = userService.login(request.getuEmail(), request.getuPassword());
         return ResponseEntity.ok(Map.of("token", token));
     }
 
     // 유저 조회
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    @GetMapping("/{uId}")
+    public ResponseEntity<User> getUser(@PathVariable("uId") Long uId) {
+        return ResponseEntity.ok(userService.getUserById(uId));
     }
 
     // 유저 수정
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
-        return ResponseEntity.ok(userService.updateUser(id, updatedUser));
+    @PostMapping("/update/{uId}")
+    public ResponseEntity<User> updateUser(@PathVariable Long uId, @RequestBody User updatedUser) {
+        return ResponseEntity.ok(userService.updateUser(uId, updatedUser));
     }
 
     // 유저 삭제
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    @PostMapping("/delete/{uId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long uId) {
+        userService.deleteUser(uId);
         return ResponseEntity.ok().build();
     }
 
-    // 더미 유저 조회
-    @GetMapping("/dummy")
-    public ResponseEntity<User> getDummyUser() {
-        User user = userService.getDummyUser("user:1");
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(user);
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        String resolveToken;
+        return ResponseEntity.ok().build();
     }
+
+
 }
