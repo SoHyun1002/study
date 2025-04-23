@@ -36,17 +36,7 @@ public class UserAuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request, HttpServletResponse httpResponse) {
-        ResponseEntity<Map<String, String>> response = authService.handleLogin(request, httpResponse);
-        Map<String, String> tokens = response.getBody();
-        if (tokens != null) {
-            String accessToken = tokens.get("accessToken");
-            String refreshToken = tokens.get("refreshToken");
-            System.out.println("✅ AccessToken: " + accessToken);
-            System.out.println("✅ RefreshToken: " + refreshToken);
-            // Assuming you have access to the user object here is not possible, so this log should be handled inside AuthService
-            // But if you want to log Redis save step here, you need user info; otherwise, it should be inside AuthService.
-        }
-        return response;
+        return authService.handleLogin(request, httpResponse);
     }
 
     /**
@@ -65,17 +55,7 @@ public class UserAuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse httpResponse) {
-        // If resolveToken is still needed, you may need to inject the proper service.
-        // For now, assuming token resolution is not changed.
-        String token = authService.resolveToken(request);
-        System.out.println("Resolved token: " + token);
-
-        // 쿠키 제거: 유효시간 0으로 설정
-        Cookie jwtCookie = new Cookie("jwt", null);
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(0); // 즉시 만료
-        httpResponse.addCookie(jwtCookie);
+        authService.handleLogout(request, httpResponse);
         return ResponseEntity.ok().build();
     }
 

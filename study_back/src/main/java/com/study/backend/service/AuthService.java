@@ -141,7 +141,7 @@ public class AuthService {
     /**
      * 요청으로부터 accessToken 쿠키 값을 추출합니다.
      *
-     * @param request HttpServletRequ   est 객체
+     * @param request HttpServletRequest 객체
      * @return accessToken 쿠키 값이 있으면 반환, 없으면 null 반환
      */
     public String resolveToken(HttpServletRequest request) {
@@ -154,5 +154,30 @@ public class AuthService {
             }
         }
         return null;
+    }
+
+    /**
+     * 로그아웃 처리를 담당하는 메서드입니다.
+     * 액세스 토큰, 리프레시 토큰 쿠키를 만료시킵니다.
+     *
+     * @param request  HttpServletRequest 객체
+     * @param response HttpServletResponse 객체
+     */
+    public void handleLogout(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) {
+        String token = resolveToken(request);
+        System.out.println("Resolved token: " + token);
+
+        // 쿠키 제거: 유효시간 0으로 설정
+        jakarta.servlet.http.Cookie jwtCookie = new jakarta.servlet.http.Cookie("accessToken", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // 즉시 만료
+        response.addCookie(jwtCookie);
+
+        jakarta.servlet.http.Cookie refreshCookie = new jakarta.servlet.http.Cookie("refreshToken", null);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0); // 즉시 만료
+        response.addCookie(refreshCookie);
     }
 }
