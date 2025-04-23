@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
 
 
 @Service
@@ -62,8 +63,9 @@ public class AccountService {
      */
     public void requestAccountDeletion(Long uId) {
         User user = userRepository.findById(uId).orElseThrow();
-        user.setDeletedAt(java.time.LocalDateTime.now());
+        user.setDeletedAt(LocalDateTime.now());
         userRepository.save(user);
         redisTemplate.delete("user:" + uId);
+        redisTemplate.delete("user:token:" + uId);
     }
 }

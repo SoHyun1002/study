@@ -66,9 +66,8 @@ public class UserCacheService {
      * @param uId 사용자 ID
      */
     public void deleteUser(Long uId) {
-        // DB에서 사용자 정보 삭제
         userRepository.deleteById(uId);
-        // 캐시에서도 사용자 정보 삭제
-        redisTemplate.delete("user:" + uId);
+        redisTemplate.delete("user:" + uId); // 사용자 캐시 삭제
+        redisTemplate.delete("user:token:" + uId); // ✅ 로그인 토큰 삭제
     }
 }

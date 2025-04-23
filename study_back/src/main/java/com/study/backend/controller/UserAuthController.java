@@ -69,4 +69,6 @@ public class UserAuthController {
     public ResponseEntity<User> getUser(@PathVariable("uId") Long uId) {
         return ResponseEntity.ok(userCacheService.getUserById(uId));
     }
+
+
 }

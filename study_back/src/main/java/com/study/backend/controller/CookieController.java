@@ -10,7 +10,7 @@ public class CookieController {
         ResponseCookie cookie = ResponseCookie.from("cookieName", "cookieValue")
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("None")
+                .sameSite("Lax")
                 .path("/")
                 .build();
 

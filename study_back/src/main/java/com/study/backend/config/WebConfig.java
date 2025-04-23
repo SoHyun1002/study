@@ -13,10 +13,12 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 // 허용할 도메인 주소
-                .allowedOrigins("http://localhost:8921")
+                .allowedOrigins("http://localhost:3000")
                 // 허용할 HTTP 메서드
                 .allowedMethods("*")
                 // 쿠키를 사용하는 경우 true로 설정
                 .allowCredentials(true);
     }
+
+
 }
