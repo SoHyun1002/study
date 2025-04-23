@@ -1,6 +1,6 @@
 package com.study.backend.config;
 
-import com.study.backend.entity.user.User;
+import com.study.backend.entity.User;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;

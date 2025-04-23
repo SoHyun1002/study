@@ -1,6 +1,7 @@
-package com.study.backend.entity.user;
+package com.study.backend.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "`user`")
@@ -22,6 +23,9 @@ public class User {
 
     @Column(name = "u_role")
     private String uRole;       // 유저 권한
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
 
     public Long getuId() {
@@ -62,5 +66,13 @@ public class User {
 
     public void setuRole(String uRole) {
         this.uRole = uRole;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

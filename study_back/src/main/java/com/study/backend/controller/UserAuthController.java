@@ -1,8 +1,15 @@
+
+/**
+ * 사용자 인증 관련 요청을 처리하는 컨트롤러입니다.
+ *
+ * 로그인, 리프레시 토큰을 통한 액세스 토큰 재발급, 로그아웃, 사용자 정보 조회 기능을 포함합니다.
+ */
 package com.study.backend.controller;
 
 import com.study.backend.dto.LoginRequest;
-import com.study.backend.entity.user.User;
-import com.study.backend.service.UserService;
+import com.study.backend.entity.User;
+import com.study.backend.service.AuthService;
+import com.study.backend.service.UserCacheService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.Cookie;
@@ -15,42 +22,43 @@ import java.util.Map;
 @RequestMapping("/users")
 public class UserAuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
+    private final UserCacheService userCacheService;
 
-    public UserAuthController(UserService userService) {
-        this.userService = userService;
+    // 인증 서비스와 사용자 조회 서비스 주입
+    public UserAuthController(AuthService authService, UserCacheService userCacheService) {
+        this.authService = authService;
+        this.userCacheService = userCacheService;
     }
 
-    // 로그인
+    /**
+     * 사용자 로그인 요청을 처리합니다.
+     * 이메일과 비밀번호를 검증하고, 액세스 토큰 및 리프레시 토큰을 쿠키에 저장합니다.
+     */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request, HttpServletResponse httpResponse) {
-        // 검증 로직
-        java.util.Optional<User> userOptional = userService.findByuEmail(request.getuEmail());
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid email"));
-        }
-        User user = userOptional.get();
-        if (!user.getuPassword().equals(request.getuPassword())) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid password"));
-        }
-        // 쿠키
-        String token = userService.login(user.getuEmail(), user.getuPassword());
-        Cookie jwtCookie = new Cookie("jwt", token);
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(60 * 60); // 1 hour
-        httpResponse.addCookie(jwtCookie);
-        return ResponseEntity.ok(Map.of("token", token));
+        return authService.handleLogin(request, httpResponse);
+    }
+
+    /**
+     * 리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받는 요청을 처리합니다.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<Map<String, String>> refreshAccessToken(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        return authService.handleRefreshToken(refreshToken);
     }
 
 
-
-    // 로그아웃
+    /**
+     * 로그아웃 요청을 처리합니다.
+     * 쿠키에서 액세스 토큰을 제거하여 클라이언트 측 인증 상태를 만료시킵니다.
+     */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse httpResponse) {
-        String token = userService.resolveToken(request);
+        // If resolveToken is still needed, you may need to inject the proper service.
+        // For now, assuming token resolution is not changed.
+        String token = authService.resolveToken(request);
         System.out.println("Resolved token: " + token);
 
         // 쿠키 제거: 유효시간 0으로 설정
@@ -62,14 +70,14 @@ public class UserAuthController {
         return ResponseEntity.ok().build();
     }
 
-
-
-
-    // 유저 조회
+    /**
+     * 사용자 ID를 이용해 사용자 정보를 조회합니다.
+     *
+     * @param uId 사용자 ID
+     * @return 사용자 정보
+     */
     @GetMapping("/{uId}")
     public ResponseEntity<User> getUser(@PathVariable("uId") Long uId) {
-        return ResponseEntity.ok(userService.getUserById(uId));
+        return ResponseEntity.ok(userCacheService.getUserById(uId));
     }
-
-
 }
