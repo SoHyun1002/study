@@ -1,6 +1,5 @@
 package com.study.backend.service;
 
-import jakarta.servlet.http.Cookie;
 
 import com.study.backend.component.JwtToken;
 import com.study.backend.entity.User;
@@ -10,7 +9,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class AccountService {
@@ -67,22 +65,5 @@ public class AccountService {
         user.setDeletedAt(java.time.LocalDateTime.now());
         userRepository.save(user);
         redisTemplate.delete("user:" + uId);
-    }
-
-
-    /**
-     * HttpServletRequest에서 accessToken 쿠키를 추출합니다.
-     * accessToken이 존재하면 해당 값을 반환하고, 없으면 null을 반환합니다.
-     */
-    public String resolveToken(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("accessToken".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
     }
 }

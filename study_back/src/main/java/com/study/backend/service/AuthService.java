@@ -81,12 +81,17 @@ public class AuthService {
         String accessToken = jwtToken.generateToken(user.getuEmail());
         String refreshToken = jwtToken.generateRefreshToken(user.getuEmail());
 
+        System.out.println("✅ AccessToken: " + accessToken);
+        System.out.println("✅ RefreshToken: " + refreshToken);
+
         // 리프레시 토큰을 저장합니다.
         RefreshToken tokenEntity = new RefreshToken();
         tokenEntity.setToken(refreshToken);
         tokenEntity.setUId(user.getuId());
         tokenEntity.setExpiryDate(LocalDateTime.now().plusDays(7));
         refreshTokenRepository.save(tokenEntity);
+
+        System.out.println("📝 Redis에 저장된 RefreshToken: user:token:" + user.getuId() + " = " + refreshToken);
 
         // 액세스 토큰을 쿠키에 저장
         jakarta.servlet.http.Cookie accessTokenCookie = new jakarta.servlet.http.Cookie("accessToken", accessToken);
@@ -103,7 +108,9 @@ public class AuthService {
         httpResponse.addCookie(accessTokenCookie);
         httpResponse.addCookie(refreshTokenCookie);
 
-        return ResponseEntity.ok(Map.of("message", "Login successful"));
+        return ResponseEntity.ok(
+                Map.of("accessToken", accessToken, "refreshToken", refreshToken)
+        );
     }
 
     /**
@@ -134,7 +141,7 @@ public class AuthService {
     /**
      * 요청으로부터 accessToken 쿠키 값을 추출합니다.
      *
-     * @param request HttpServletRequest 객체
+     * @param request HttpServletRequ   est 객체
      * @return accessToken 쿠키 값이 있으면 반환, 없으면 null 반환
      */
     public String resolveToken(HttpServletRequest request) {

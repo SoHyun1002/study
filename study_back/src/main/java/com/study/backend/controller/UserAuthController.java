@@ -1,4 +1,3 @@
-
 /**
  * 사용자 인증 관련 요청을 처리하는 컨트롤러입니다.
  *
@@ -37,7 +36,17 @@ public class UserAuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request, HttpServletResponse httpResponse) {
-        return authService.handleLogin(request, httpResponse);
+        ResponseEntity<Map<String, String>> response = authService.handleLogin(request, httpResponse);
+        Map<String, String> tokens = response.getBody();
+        if (tokens != null) {
+            String accessToken = tokens.get("accessToken");
+            String refreshToken = tokens.get("refreshToken");
+            System.out.println("✅ AccessToken: " + accessToken);
+            System.out.println("✅ RefreshToken: " + refreshToken);
+            // Assuming you have access to the user object here is not possible, so this log should be handled inside AuthService
+            // But if you want to log Redis save step here, you need user info; otherwise, it should be inside AuthService.
+        }
+        return response;
     }
 
     /**
