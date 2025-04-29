@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -70,7 +71,7 @@ public class AuthService {
     public ResponseEntity<Map<String, String>> handleLogin(LoginRequest request, jakarta.servlet.http.HttpServletResponse httpResponse) {
         Optional<User> userOptional = findByuEmail(request.getuEmail());
         if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid email"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error",  "Invalid email"));
         }
 
         User user = userOptional.get();
@@ -180,4 +181,35 @@ public class AuthService {
         refreshCookie.setMaxAge(0); // 즉시 만료
         response.addCookie(refreshCookie);
     }
+
+
+    /**
+     * 현재 로그인한 사용자의 정보를 반환하는 메서드입니다.
+     * 요청으로부터 액세스 토큰을 추출하고, 토큰의 유효성을 검증한 후,
+     * 토큰에서 이메일을 추출하여 해당 사용자를 조회합니다.
+     *
+     * @param request HttpServletRequest 객체 (쿠키에서 accessToken 추출)
+     * @return 사용자 정보(User)를 담은 ResponseEntity
+     */
+    public ResponseEntity<User> getMyInfo(HttpServletRequest request) {
+        // 요청에서 accessToken 추출
+        String token = resolveToken(request);
+
+        // 토큰이 없거나 유효하지 않으면 UNAUTHORIZED 반환
+        if (token == null || !jwtToken.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // 토큰에서 이메일 추출
+        String email = jwtToken.getUserEmail(token);
+
+        // 이메일로 사용자 조회
+        User user = findByuEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 조회한 사용자 정보를 반환
+        return ResponseEntity.ok(user);
+    }
+
+
 }

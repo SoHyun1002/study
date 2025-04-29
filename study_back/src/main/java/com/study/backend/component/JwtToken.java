@@ -54,6 +54,20 @@ public class JwtToken {
     }
 
 
+    // 토큰 유효성 검사 메서드
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                .setSigningKey(SECRET_KEY)
+                .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
-
+    // 토큰에서 이메일을 추출하는 메서드
+    public String getUserEmail(String token) {
+        return extractEmail(token);
+    }
 }

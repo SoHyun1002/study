@@ -9,6 +9,7 @@ import com.study.backend.dto.LoginRequest;
 import com.study.backend.entity.User;
 import com.study.backend.service.AuthService;
 import com.study.backend.service.UserCacheService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.Cookie;
@@ -68,6 +69,12 @@ public class UserAuthController {
     @GetMapping("/{uId}")
     public ResponseEntity<User> getUser(@PathVariable("uId") Long uId) {
         return ResponseEntity.ok(userCacheService.getUserById(uId));
+    }
+
+
+    @GetMapping("/me")
+    public ResponseEntity<User> getMyInfo(HttpServletRequest request) {
+        return authService.getMyInfo(request);
     }
 
 
