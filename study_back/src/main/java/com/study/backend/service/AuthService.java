@@ -1,29 +1,38 @@
 package com.study.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.backend.component.JwtToken;
 import com.study.backend.dto.LoginRequest;
+import com.study.backend.dto.RedisUserInfo;
 import com.study.backend.entity.RefreshToken;
 import com.study.backend.entity.User;
 import com.study.backend.repository.RefreshTokenRepository;
 import com.study.backend.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class AuthService {
     private final UserRepository userRepository;
     private final JwtToken jwtToken;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
+
 
     /**
      * 의존성 주입을 위한 생성자입니다.
@@ -32,11 +41,15 @@ public class AuthService {
     public AuthService(UserRepository userRepository,
                        JwtToken jwtToken,
                        PasswordEncoder passwordEncoder,
-                       RefreshTokenRepository refreshTokenRepository) {
+                       RefreshTokenRepository refreshTokenRepository,
+                       RedisTemplate redisTemplate,
+                       ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.jwtToken = jwtToken;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -68,7 +81,7 @@ public class AuthService {
      * @param httpResponse 쿠키를 추가할 HttpServletResponse
      * @return 로그인 성공/실패에 따른 ResponseEntity를 반환합니다.
      */
-    public ResponseEntity<Map<String, String>> handleLogin(LoginRequest request, jakarta.servlet.http.HttpServletResponse httpResponse) {
+    public ResponseEntity<Map<String, String>> handleLogin(LoginRequest request, HttpServletResponse httpResponse) {
         Optional<User> userOptional = findByuEmail(request.getuEmail());
         if (userOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error",  "Invalid email"));
@@ -81,6 +94,23 @@ public class AuthService {
 
         String accessToken = jwtToken.generateToken(user.getuEmail());
         String refreshToken = jwtToken.generateRefreshToken(user.getuEmail());
+
+        RedisUserInfo redisUserInfo = new RedisUserInfo(
+              user.getuEmail(),
+              user.getuName()
+        );
+
+        try {
+            String redisValue = objectMapper.writeValueAsString(redisUserInfo); //직렬화
+
+            redisTemplate.opsForValue().set(
+                    accessToken,
+                    redisValue
+            );
+        }catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
 
         System.out.println("✅ AccessToken: " + accessToken);
         System.out.println("✅ RefreshToken: " + refreshToken);
@@ -95,13 +125,13 @@ public class AuthService {
         System.out.println("📝 Redis에 저장된 RefreshToken: user:token:" + user.getuId() + " = " + refreshToken);
 
         // 액세스 토큰을 쿠키에 저장
-        jakarta.servlet.http.Cookie accessTokenCookie = new jakarta.servlet.http.Cookie("accessToken", accessToken);
+        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
         accessTokenCookie.setHttpOnly(true);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(60 * 60);
 
         // 리프레시 토큰을 쿠키에 저장
-        jakarta.servlet.http.Cookie refreshTokenCookie = new jakarta.servlet.http.Cookie("refreshToken", refreshToken);
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
@@ -164,52 +194,22 @@ public class AuthService {
      * @param request  HttpServletRequest 객체
      * @param response HttpServletResponse 객체
      */
-    public void handleLogout(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) {
+    public void handleLogout(HttpServletRequest request, HttpServletResponse response) {
         String token = resolveToken(request);
         System.out.println("Resolved token: " + token);
 
         // 쿠키 제거: 유효시간 0으로 설정
-        jakarta.servlet.http.Cookie jwtCookie = new jakarta.servlet.http.Cookie("accessToken", null);
+        Cookie jwtCookie = new Cookie("accessToken", null);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0); // 즉시 만료
         response.addCookie(jwtCookie);
 
-        jakarta.servlet.http.Cookie refreshCookie = new jakarta.servlet.http.Cookie("refreshToken", null);
+        Cookie refreshCookie = new Cookie("refreshToken", null);
         refreshCookie.setHttpOnly(true);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0); // 즉시 만료
         response.addCookie(refreshCookie);
     }
-
-
-    /**
-     * 현재 로그인한 사용자의 정보를 반환하는 메서드입니다.
-     * 요청으로부터 액세스 토큰을 추출하고, 토큰의 유효성을 검증한 후,
-     * 토큰에서 이메일을 추출하여 해당 사용자를 조회합니다.
-     *
-     * @param request HttpServletRequest 객체 (쿠키에서 accessToken 추출)
-     * @return 사용자 정보(User)를 담은 ResponseEntity
-     */
-    public ResponseEntity<User> getMyInfo(HttpServletRequest request) {
-        // 요청에서 accessToken 추출
-        String token = resolveToken(request);
-
-        // 토큰이 없거나 유효하지 않으면 UNAUTHORIZED 반환
-        if (token == null || !jwtToken.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // 토큰에서 이메일 추출
-        String email = jwtToken.getUserEmail(token);
-
-        // 이메일로 사용자 조회
-        User user = findByuEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // 조회한 사용자 정보를 반환
-        return ResponseEntity.ok(user);
-    }
-
 
 }

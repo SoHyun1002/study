@@ -2,7 +2,9 @@ package com.study.backend.controller;
 
 import org.springframework.http.ResponseCookie;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.RestController;
 
+@RestController
 public class CookieController {
 
     public String setCookie(HttpServletResponse response) {

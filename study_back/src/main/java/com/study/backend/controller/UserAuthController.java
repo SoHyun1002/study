@@ -71,11 +71,4 @@ public class UserAuthController {
         return ResponseEntity.ok(userCacheService.getUserById(uId));
     }
 
-
-    @GetMapping("/me")
-    public ResponseEntity<User> getMyInfo(HttpServletRequest request) {
-        return authService.getMyInfo(request);
-    }
-
-
 }

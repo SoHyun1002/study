@@ -48,11 +48,7 @@ public class AccountService {
 
         User saved = userRepository.save(user);
 
-        String token = jwtToken.generateToken(saved.getuEmail());
-        String tokenKey = "user:token:" + saved.getuId();
-        stringRedisTemplate.opsForValue().set(tokenKey, token);
-
-        System.out.println("Inserted JWT token into Redis with key: " + tokenKey);
+        System.out.println("Inserted JWT token into Redis with key: " );
 
         return saved;
     }
